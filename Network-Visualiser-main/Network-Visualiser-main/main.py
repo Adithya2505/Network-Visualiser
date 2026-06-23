@@ -11,7 +11,7 @@ def main():
     topology = build_topology(flows)
     alerts = run_detections(flows)
     print("Anomaly detection completed")
-    topology = add_layout_positions(topology, flows)
+    topology = add_layout_positions(topology)
     print("Topology made")
     export_json(topology, flows, alerts, dataset_name)
     print("JSON Exported")

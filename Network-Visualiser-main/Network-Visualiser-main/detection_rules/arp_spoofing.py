@@ -22,7 +22,7 @@ def detect(flows):
                 seen.add(key)
                 alerts.append({
                     "type":    "ARP Spoofing",
-                    "source":  sorted(ips)[0],  # Show one IP as source
+                    "source":  mac,
                     "target":  ", ".join(sorted(ips)),
                     "details": (
                         f"MAC {mac} claims to be {len(ips)} different IPs: "
@@ -37,7 +37,7 @@ def detect(flows):
                 seen.add(key)
                 alerts.append({
                     "type":    "ARP Spoofing",
-                    "source":  ip,
+                    "source":  ", ".join(sorted(macs)),
                     "target":  ip,
                     "details": (
                         f"IP {ip} claimed by {len(macs)} different MACs: "

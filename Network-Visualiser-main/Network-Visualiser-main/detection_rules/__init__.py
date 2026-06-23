@@ -1,0 +1,1 @@
+print("detection_rules package loaded")
