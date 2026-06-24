@@ -31,5 +31,4 @@ def detect(flows):
                     f"Consistent with credential stuffing or dictionary attack."
                 ),
             })
-    print(f"brute_force detection done: {len(alerts)} alerts")
     return alerts

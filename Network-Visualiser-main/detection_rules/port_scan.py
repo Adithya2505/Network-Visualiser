@@ -32,5 +32,4 @@ def detect(flows):
                     f"(ratio {ratio:.1f}:1). Likely SYN flood or aggressive scan."
                 ),
             })
-    print(f"syn_flood detection done: {len(alerts)} alerts")
     return alerts

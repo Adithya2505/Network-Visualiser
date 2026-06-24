@@ -1,7 +1,8 @@
 from collections import defaultdict
 import ipaddress
 
-LARGE_OUTBOUND_BYTES = 2 * 1024 * 1024  # 2 MB
+# 50 MB — raised from 2 MB to avoid false positives on software updates/uploads.
+LARGE_OUTBOUND_BYTES = 50 * 1024 * 1024
 
 _PRIVATE = [
     ipaddress.ip_network("10.0.0.0/8"),
@@ -36,5 +37,5 @@ def detect(flows):
                     f"Potential data exfiltration."
                 ),
             })
-    print(f"large_outbound detection done: {len(alerts)} alerts")
+
     return alerts

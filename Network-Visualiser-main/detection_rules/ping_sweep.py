@@ -22,5 +22,4 @@ def detect(flows):
                     f"Consistent with network reconnaissance."
                 ),
             })
-    print(f"ping_sweep detection done: {len(alerts)} alerts")
     return alerts

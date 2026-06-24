@@ -1,5 +1,18 @@
 from collections import defaultdict
 
+# VRRP (RFC 5798) and HSRP virtual MACs — legitimately shared across HA pairs.
+_WHITELISTED_MAC_PREFIXES = (
+    "00:00:5e:00:01:",  # VRRP
+    "00:00:0c:07:ac:",  # HSRP
+)
+
+MAC_MULTI_IP_THRESHOLD = 2
+
+
+def _is_whitelisted(mac: str) -> bool:
+    return any(mac.lower().startswith(prefix) for prefix in _WHITELISTED_MAC_PREFIXES)
+
+
 def detect(flows):
     alerts = []
     mac_to_ips = defaultdict(set)
@@ -10,23 +23,25 @@ def detect(flows):
             continue
         if f["arp_hwsrc"] == "00:00:00:00:00:00":
             continue
+        if _is_whitelisted(f["arp_hwsrc"]):
+            continue
         mac_to_ips[f["arp_hwsrc"]].add(f["src_ip"])
         ip_to_macs[f["src_ip"]].add(f["arp_hwsrc"])
 
     seen = set()
 
     for mac, ips in mac_to_ips.items():
-        if len(ips) > 1:
+        if len(ips) >= MAC_MULTI_IP_THRESHOLD:
             key = ("mac", mac)
             if key not in seen:
                 seen.add(key)
                 alerts.append({
                     "type":    "ARP Spoofing",
-                    "source":  sorted(ips)[0],  # Show one IP as source
+                    "source":  sorted(ips)[0],
                     "target":  ", ".join(sorted(ips)),
                     "details": (
                         f"MAC {mac} claims to be {len(ips)} different IPs: "
-                        f"{sorted(ips)}. Indicates ARP cache poisoning."
+                        f"{sorted(ips)}. Possible ARP cache poisoning."
                     ),
                 })
 
@@ -44,5 +59,5 @@ def detect(flows):
                         f"{sorted(macs)}. Indicates IP conflict or spoofing."
                     ),
                 })
-    print(f"arp_spoofing detection done: {len(alerts)} alerts")
+
     return alerts

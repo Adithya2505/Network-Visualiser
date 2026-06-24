@@ -66,5 +66,5 @@ docker-compose.override.yml
 # Misc
 *.manifest
 *.spec
-/output
-/dataset
+/output/*/
+/dataset/*/
