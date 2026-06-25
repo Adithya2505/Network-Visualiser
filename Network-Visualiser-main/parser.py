@@ -1,19 +1,12 @@
 # parser.py
 from collections import defaultdict
-from scapy.all import rdpcap, IP, TCP, UDP, ARP, ICMP, DNS, DNSQR
+from scapy.all import PcapReader, IP, TCP, UDP, ARP, ICMP, DNS, DNSQR
 
-
-def read_pcap(file_path):
-    packets = rdpcap(file_path)
-    print(f"PCAP read successfully: {file_path}")
-    return packets
-
-
-def preprocess_packets(packets):
+def preprocess_packets(file_path):
     flows = []
 
-    for packet in packets:
-
+    with PcapReader(file_path) as reader:
+     for packet in reader:
         # ── ARP packets (no IP layer) ──────────────────────────────────
         if packet.haslayer(ARP):
             flows.append({
