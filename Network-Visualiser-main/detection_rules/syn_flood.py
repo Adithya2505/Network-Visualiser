@@ -3,24 +3,27 @@ from collections import defaultdict
 SYN_FLOOD_RATIO    = 5.0
 SYN_FLOOD_MIN_SYNS = 100
 
-def detect(flows):
+def new_state():
+    return {
+        "syn_cnt":    defaultdict(int),
+        "synack_cnt": defaultdict(int),
+    }
+
+def update(state, f):
+    if f["tcp_flags"] is None:
+        return
+    flags = f["tcp_flags"]
+    if (flags & 0x02) and not (flags & 0x10):
+        state["syn_cnt"][f["src_ip"]] += 1
+    if (flags & 0x12) == 0x12:
+        state["synack_cnt"][f["dst_ip"]] += 1
+
+def finalize(state):
     alerts = []
-    syn_cnt    = defaultdict(int)
-    synack_cnt = defaultdict(int)
-
-    for f in flows:
-        if f["tcp_flags"] is None:
-            continue
-        flags = f["tcp_flags"]
-        if (flags & 0x02) and not (flags & 0x10):
-            syn_cnt[f["src_ip"]] += 1
-        if (flags & 0x12) == 0x12:
-            synack_cnt[f["dst_ip"]] += 1
-
-    for src, syns in syn_cnt.items():
+    for src, syns in state["syn_cnt"].items():
         if syns < SYN_FLOOD_MIN_SYNS:
             continue
-        synacks = synack_cnt.get(src, 0)
+        synacks = state["synack_cnt"].get(src, 0)
         ratio = syns / max(synacks, 1)
         if ratio > SYN_FLOOD_RATIO:
             alerts.append({

@@ -1,7 +1,6 @@
 from collections import defaultdict
 import ipaddress
 
-# 50 MB — raised from 2 MB to avoid false positives on software updates/uploads.
 LARGE_OUTBOUND_BYTES = 50 * 1024 * 1024
 
 _PRIVATE = [
@@ -18,15 +17,18 @@ def _is_private(ip):
     except ValueError:
         return False
 
-def detect(flows):
+def new_state():
+    return {
+        "flow_bytes": defaultdict(int),
+    }
+
+def update(state, f):
+    if f["pkt_len"] and _is_private(f["src_ip"]) and not _is_private(f["dst_ip"]):
+        state["flow_bytes"][(f["src_ip"], f["dst_ip"])] += f["pkt_len"]
+
+def finalize(state):
     alerts = []
-    flow_bytes = defaultdict(int)
-
-    for f in flows:
-        if f["pkt_len"] and _is_private(f["src_ip"]) and not _is_private(f["dst_ip"]):
-            flow_bytes[(f["src_ip"], f["dst_ip"])] += f["pkt_len"]
-
-    for (src, dst), total in flow_bytes.items():
+    for (src, dst), total in state["flow_bytes"].items():
         if total > LARGE_OUTBOUND_BYTES:
             alerts.append({
                 "type":    "Large Outbound Transfer",
@@ -37,5 +39,4 @@ def detect(flows):
                     f"Potential data exfiltration."
                 ),
             })
-
     return alerts

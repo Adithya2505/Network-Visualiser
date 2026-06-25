@@ -1,12 +1,11 @@
 import math
 from collections import defaultdict, Counter
 
-DNS_LABEL_MAX      = 52   # per-label threshold (Elastic/Endgame research)
-DNS_FULL_QUERY_MAX = 100  # full FQDN threshold
-DNS_QUERY_COUNT    = 10   # min total queries before evaluating a source
-DNS_MIN_SUSPICIOUS = 5    # min suspicious queries to raise an alert
-DNS_ENTROPY_MIN    = 4.0  # Shannon entropy floor; tunneled subdomains typically > 4.0
-
+DNS_LABEL_MAX      = 52
+DNS_FULL_QUERY_MAX = 100
+DNS_QUERY_COUNT    = 10
+DNS_MIN_SUSPICIOUS = 5
+DNS_ENTROPY_MIN    = 4.0
 
 def _shannon_entropy(s: str) -> float:
     if not s:
@@ -15,12 +14,9 @@ def _shannon_entropy(s: str) -> float:
     length = len(s)
     return -sum((c / length) * math.log2(c / length) for c in freq.values())
 
-
 def _extract_subdomain(query: str) -> str:
-    # Strip the last two labels (SLD + TLD) and return the subdomain portion.
     parts = query.rstrip(".").split(".")
     return ".".join(parts[:-2]) if len(parts) > 2 else ""
-
 
 def _is_suspicious(query: str) -> bool:
     labels = query.rstrip(".").split(".")
@@ -33,21 +29,21 @@ def _is_suspicious(query: str) -> bool:
         return True
     return False
 
+def new_state():
+    return {
+        "src_queries": defaultdict(list),
+    }
 
-def detect(flows):
+def update(state, f):
+    if f["dns_query"] is not None:
+        state["src_queries"][f["src_ip"]].append(f["dns_query"])
+
+def finalize(state):
     alerts = []
-    src_queries = defaultdict(list)
-
-    for f in flows:
-        if f["dns_query"] is not None:
-            src_queries[f["src_ip"]].append(f["dns_query"])
-
-    for src, queries in src_queries.items():
+    for src, queries in state["src_queries"].items():
         if len(queries) < DNS_QUERY_COUNT:
             continue
-
         suspicious = [q for q in queries if _is_suspicious(q)]
-
         if len(suspicious) >= DNS_MIN_SUSPICIOUS:
             alerts.append({
                 "type":    "DNS Tunneling",
@@ -60,5 +56,4 @@ def detect(flows):
                     f"Sample: {suspicious[0][:80]}"
                 ),
             })
-
     return alerts

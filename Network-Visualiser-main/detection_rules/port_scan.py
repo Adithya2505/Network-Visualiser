@@ -1,35 +1,38 @@
 from collections import defaultdict
 
-SYN_FLOOD_RATIO    = 5.0
-SYN_FLOOD_MIN_SYNS = 100
+PORT_SCAN_MIN_PORTS = 20
+PORT_SCAN_MIN_SYNS  = 5
 
-def detect(flows):
+def new_state():
+    return {
+        "port_sets":  defaultdict(set),
+        "syn_counts": defaultdict(int),
+    }
+
+def update(state, f):
+    if f["tcp_flags"] is None or f["dst_port"] is None:
+        return
+    flags = f["tcp_flags"]
+    if not ((flags & 0x02) and not (flags & 0x10)):
+        return
+    key = (f["src_ip"], f["dst_ip"])
+    state["port_sets"][key].add(f["dst_port"])
+    state["syn_counts"][key] += 1
+
+def finalize(state):
     alerts = []
-    syn_cnt    = defaultdict(int)
-    synack_cnt = defaultdict(int)
-
-    for f in flows:
-        if f["tcp_flags"] is None:
+    for (src, dst), ports in state["port_sets"].items():
+        if len(ports) <= PORT_SCAN_MIN_PORTS:
             continue
-        flags = f["tcp_flags"]
-        if (flags & 0x02) and not (flags & 0x10):
-            syn_cnt[f["src_ip"]] += 1
-        if (flags & 0x12) == 0x12:
-            synack_cnt[f["dst_ip"]] += 1
-
-    for src, syns in syn_cnt.items():
-        if syns < SYN_FLOOD_MIN_SYNS:
+        if state["syn_counts"][(src, dst)] < PORT_SCAN_MIN_SYNS:
             continue
-        synacks = synack_cnt.get(src, 0)
-        ratio = syns / max(synacks, 1)
-        if ratio > SYN_FLOOD_RATIO:
-            alerts.append({
-                "type":    "SYN Flood",
-                "source":  src,
-                "target":  "multiple",
-                "details": (
-                    f"{src} sent {syns} SYNs but received only {synacks} SYN-ACKs "
-                    f"(ratio {ratio:.1f}:1). Likely SYN flood or aggressive scan."
-                ),
-            })
+        alerts.append({
+            "type":    "Port Scan",
+            "source":  src,
+            "target":  dst,
+            "details": (
+                f"{src} sent SYN-only packets to {len(ports)} unique ports on {dst} "
+                f"({state['syn_counts'][(src, dst)]} total SYNs). Consistent with port reconnaissance."
+            ),
+        })
     return alerts
