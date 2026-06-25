@@ -20,6 +20,8 @@ def add_layout_positions(topology, flows):
     # ── Per-node activity and protocol counts (outbound + inbound) ──
     activity  = defaultdict(int)
     protocols = defaultdict(lambda: defaultdict(int))
+    first_seen = {}
+    last_seen  = {}
 
     # ── Per-edge protocol counts (merged bidirectional) ─────────────
     # Key: frozenset({src, dst}) so A→B and B→A merge
@@ -37,6 +39,15 @@ def add_layout_positions(topology, flows):
 
         # Node-level (bidirectional)
         activity[src]           += f["pkt_len"]
+        ts = f["timestamp"]
+        if src not in first_seen:
+            first_seen[src] = ts
+            last_seen[src]  = ts
+        else:
+            if ts < first_seen[src]:
+                first_seen[src] = ts
+            if ts > last_seen[src]:
+                last_seen[src] = ts
         protocols[src][label]   += 1
         protocols[dst][label]   += 1
 
@@ -52,7 +63,9 @@ def add_layout_positions(topology, flows):
             "x":              pos[node][0],
             "y":              pos[node][1],
             "activity_bytes": activity.get(node, 0),
-            "protocols":      dict(protocols[node]) if node in protocols else {}
+            "protocols":      dict(protocols[node]) if node in protocols else {},
+            "first_seen": first_seen.get(node, None),
+            "last_seen":  last_seen.get(node, None)
         }
         for node in topology["nodes"]
     ]
