@@ -15,7 +15,7 @@ def add_layout_positions(topology, flows):
     for edge in topology["edges"]:
         G.add_edge(edge["src"], edge["dst"])
 
-    pos = nx.spring_layout(G, k=0.5, iterations=50, seed=42)
+    pos = nx.kamada_kawai_layout(G, scale=2.5)
 
     # ── Per-node activity and protocol counts (outbound + inbound) ──
     activity  = defaultdict(int)
