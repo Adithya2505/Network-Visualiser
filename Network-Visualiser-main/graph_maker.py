@@ -22,6 +22,8 @@ def add_layout_positions(topology, flows):
     protocols = defaultdict(lambda: defaultdict(int))
     first_seen = {}
     last_seen  = {}
+    inbound_bytes  = defaultdict(int)
+    outbound_bytes = defaultdict(int)
 
     # ── Per-edge protocol counts (merged bidirectional) ─────────────
     # Key: frozenset({src, dst}) so A→B and B→A merge
@@ -38,7 +40,10 @@ def add_layout_positions(topology, flows):
         label = "ARP" if proto == "ARP" else PROTOCOL_MAP.get(proto, "Other")
 
         # Node-level (bidirectional)
-        activity[src]           += f["pkt_len"]
+        outbound_bytes[src] += f["pkt_len"]
+        inbound_bytes[dst]  += f["pkt_len"]
+        activity[src]       += f["pkt_len"]
+
         ts = f["timestamp"]
         if src not in first_seen:
             first_seen[src] = ts
@@ -65,7 +70,9 @@ def add_layout_positions(topology, flows):
             "activity_bytes": activity.get(node, 0),
             "protocols":      dict(protocols[node]) if node in protocols else {},
             "first_seen": first_seen.get(node, None),
-            "last_seen":  last_seen.get(node, None)
+            "last_seen":  last_seen.get(node, None),
+            "outbound_bytes": outbound_bytes.get(node, 0),
+            "inbound_bytes":  inbound_bytes.get(node, 0),
         }
         for node in topology["nodes"]
     ]
