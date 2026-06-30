@@ -32,11 +32,18 @@ def _is_suspicious(query: str) -> bool:
 def new_state():
     return {
         "src_queries": defaultdict(list),
+        "evidence":    defaultdict(list),
     }
 
 def update(state, f):
     if f["dns_query"] is not None:
         state["src_queries"][f["src_ip"]].append(f["dns_query"])
+        state["evidence"][f["src_ip"]].append({
+            "timestamp": f["timestamp"],
+            "src_ip": f["src_ip"],
+            "dst_ip": f["dst_ip"],
+            "dns_query": f["dns_query"],
+        })
 
 def finalize(state):
     alerts = []
@@ -45,6 +52,10 @@ def finalize(state):
             continue
         suspicious = [q for q in queries if _is_suspicious(q)]
         if len(suspicious) >= DNS_MIN_SUSPICIOUS:
+            evidence = [
+                record for record in sorted(state["evidence"].get(src, []), key=lambda item: item["timestamp"])
+                if _is_suspicious(record["dns_query"])
+            ][:50]
             alerts.append({
                 "type":    "DNS Tunneling",
                 "source":  src,
@@ -55,5 +66,6 @@ def finalize(state):
                     f"out of {len(queries)} total. "
                     f"Sample: {suspicious[0][:80]}"
                 ),
+                "evidence": evidence,
             })
     return alerts

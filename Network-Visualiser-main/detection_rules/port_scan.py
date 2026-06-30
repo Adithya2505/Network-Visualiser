@@ -7,6 +7,7 @@ def new_state():
     return {
         "port_sets":  defaultdict(set),
         "syn_counts": defaultdict(int),
+        "evidence":    defaultdict(list),
     }
 
 def update(state, f):
@@ -18,6 +19,14 @@ def update(state, f):
     key = (f["src_ip"], f["dst_ip"])
     state["port_sets"][key].add(f["dst_port"])
     state["syn_counts"][key] += 1
+    if len(state["evidence"][key]) < 50:
+        state["evidence"][key].append({
+            "timestamp": f["timestamp"],
+            "src_ip": f["src_ip"],
+            "dst_ip": f["dst_ip"],
+            "dst_port": f["dst_port"],
+            "tcp_flags": f["tcp_flags"],
+        })
 
 def finalize(state):
     alerts = []
@@ -34,5 +43,6 @@ def finalize(state):
                 f"{src} sent SYN-only packets to {len(ports)} unique ports on {dst} "
                 f"({state['syn_counts'][(src, dst)]} total SYNs). Consistent with port reconnaissance."
             ),
+            "evidence": sorted(state["evidence"][(src, dst)], key=lambda item: item["timestamp"]),
         })
     return alerts

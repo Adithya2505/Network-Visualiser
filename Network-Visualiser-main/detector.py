@@ -1,22 +1,12 @@
 from detection_rules import (
     port_scan,
     syn_flood,
-    brute_force,
-    fanin_ddos,
-    arp_spoofing,
-    ping_sweep,
-    large_outbound,
     dns_tunneling,
 )
 
 _DETECTORS = [
     port_scan,
     syn_flood,
-    brute_force,
-    fanin_ddos,
-    arp_spoofing,
-    ping_sweep,
-    large_outbound,
     dns_tunneling,
 ]
 
