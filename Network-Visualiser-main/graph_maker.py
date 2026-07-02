@@ -1,4 +1,7 @@
 import networkx as nx
+#import matplotlib.pyplot as plt
+from networkx.drawing.nx_agraph import graphviz_layout
+
 from collections import defaultdict
 
 PROTOCOL_MAP = {
@@ -15,7 +18,17 @@ def add_layout_positions(topology, flows):
     for edge in topology["edges"]:
         G.add_edge(edge["src"], edge["dst"])
 
-    pos = nx.kamada_kawai_layout(G, scale=2.5)
+    # print("DEBUG: Graph nodes:", list(G.nodes()))
+    # print("DEBUG: Graph edges:", list(G.edges()))
+
+    pos = graphviz_layout(G, prog="sfdp")
+
+    print("DEBUG: Layout positions:", pos)
+
+    # Optional temporary visual check
+    # nx.draw(G, pos, with_labels=True, node_size=300, font_size=8)
+    # plt.title("DEBUG: NetworkX Graph Layout")
+    # plt.show()
 
     # ── Per-node activity and protocol counts (outbound + inbound) ──
     activity  = defaultdict(int)
