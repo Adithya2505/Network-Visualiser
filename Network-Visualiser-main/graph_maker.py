@@ -1,6 +1,6 @@
 import networkx as nx
-#import matplotlib.pyplot as plt
 from networkx.drawing.nx_agraph import graphviz_layout
+# import matplotlib.pyplot as plt
 
 from collections import defaultdict
 
@@ -22,11 +22,26 @@ def add_layout_positions(topology, flows):
     # print("DEBUG: Graph edges:", list(G.edges()))
 
     pos = graphviz_layout(G, prog="sfdp")
+    # ── Normalize positions to -1..1 range (preserves relative layout) ──
+    xs = [p[0] for p in pos.values()]
+    ys = [p[1] for p in pos.values()]
+    x_min, x_max = min(xs), max(xs)
+    y_min, y_max = min(ys), max(ys)
 
-    print("DEBUG: Layout positions:", pos)
+    def normalize(val, vmin, vmax):
+        if vmax - vmin == 0:
+            return 0.0
+        return 2 * (val - vmin) / (vmax - vmin) - 1
+
+    pos = {
+        node: (normalize(x, x_min, x_max), normalize(y, y_min, y_max))
+        for node, (x, y) in pos.items()
+    }
+    
+    # print("DEBUG: Layout positions:", pos)
 
     # Optional temporary visual check
-    # nx.draw(G, pos, with_labels=True, node_size=300, font_size=8)
+    #nx.draw(G, pos, with_labels=True, node_size=300, font_size=8)
     # plt.title("DEBUG: NetworkX Graph Layout")
     # plt.show()
 
