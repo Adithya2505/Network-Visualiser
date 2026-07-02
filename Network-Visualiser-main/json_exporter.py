@@ -14,10 +14,6 @@ def export_json(topology, flows, alerts, dataset_name):
     with open(output_dir / "topology.json", "w") as f:
         json.dump(topology, f, indent=2)
 
-    timeline = sorted(flows, key=lambda flow: flow["timestamp"])
-    with open(output_dir / "timeline.json", "w") as f:
-        json.dump(timeline, f, indent=2)
-
     with open(output_dir / "alerts.json", "w") as f:
         json.dump(alerts, f, indent=2)
     print(f"Exported JSON files to {output_dir}")
