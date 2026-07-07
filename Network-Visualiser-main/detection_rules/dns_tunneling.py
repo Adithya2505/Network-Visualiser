@@ -1,4 +1,5 @@
 import math
+import random
 from collections import defaultdict, Counter
 
 DNS_LABEL_MAX      = 52
@@ -144,17 +145,26 @@ def new_state():
     return {
         "src_queries": defaultdict(list),
         "evidence":    defaultdict(list),
+        "evidence_count": defaultdict(int),
     }
 
 def update(state, f):
     if f["dns_query"] is not None:
         state["src_queries"][f["src_ip"]].append(f["dns_query"])
-        state["evidence"][f["src_ip"]].append({
-            "timestamp": f["timestamp"],
-            "src_ip": f["src_ip"],
-            "dst_ip": f["dst_ip"],
-            "dns_query": f["dns_query"],
-        })
+        if _is_suspicious(f["dns_query"]):
+            state["evidence_count"][f["src_ip"]] += 1
+            ev_item = {
+                "timestamp": f["timestamp"],
+                "src_ip": f["src_ip"],
+                "dst_ip": f["dst_ip"],
+                "dns_query": f["dns_query"],
+            }
+            if len(state["evidence"][f["src_ip"]]) < _EVIDENCE_CAP:
+                state["evidence"][f["src_ip"]].append(ev_item)
+            else:
+                j = random.randint(0, state["evidence_count"][f["src_ip"]] - 1)
+                if j < _EVIDENCE_CAP:
+                    state["evidence"][f["src_ip"]][j] = ev_item
 
 def finalize(state):
     alerts = []

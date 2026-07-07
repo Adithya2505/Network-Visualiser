@@ -1,8 +1,9 @@
+import random
 from collections import defaultdict
 
 SYN_FLOOD_RATIO    = 5.0
 SYN_FLOOD_MIN_SYNS = 100
-_EVIDENCE_CAP      = 50
+_EVIDENCE_CAP      = 125
 
 
 def _build_replay(evidence, total_syn_count, total_synack_count):
@@ -85,6 +86,7 @@ def new_state():
         "syn_cnt":    defaultdict(int),
         "synack_cnt": defaultdict(int),
         "evidence":   defaultdict(list),
+        "evidence_count": defaultdict(int),
     }
 
 def update(state, f):
@@ -93,14 +95,20 @@ def update(state, f):
     flags = f["tcp_flags"]
     if (flags & 0x02) and not (flags & 0x10):
         state["syn_cnt"][f["src_ip"]] += 1
+        state["evidence_count"][f["src_ip"]] += 1
+        ev_item = {
+            "timestamp": f["timestamp"],
+            "src_ip": f["src_ip"],
+            "dst_ip": f["dst_ip"],
+            "dst_port": f["dst_port"],
+            "tcp_flags": f["tcp_flags"],
+        }
         if len(state["evidence"][f["src_ip"]]) < _EVIDENCE_CAP:
-            state["evidence"][f["src_ip"]].append({
-                "timestamp": f["timestamp"],
-                "src_ip": f["src_ip"],
-                "dst_ip": f["dst_ip"],
-                "dst_port": f["dst_port"],
-                "tcp_flags": f["tcp_flags"],
-            })
+            state["evidence"][f["src_ip"]].append(ev_item)
+        else:
+            j = random.randint(0, state["evidence_count"][f["src_ip"]] - 1)
+            if j < _EVIDENCE_CAP:
+                state["evidence"][f["src_ip"]][j] = ev_item
     if (flags & 0x12) == 0x12:
         state["synack_cnt"][f["dst_ip"]] += 1
 

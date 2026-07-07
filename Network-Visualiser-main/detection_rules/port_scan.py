@@ -1,3 +1,4 @@
+import random
 from collections import defaultdict
 
 PORT_SCAN_MIN_PORTS = 20
@@ -87,6 +88,7 @@ def new_state():
         "port_sets":  defaultdict(set),
         "syn_counts": defaultdict(int),
         "evidence":    defaultdict(list),
+        "evidence_count": defaultdict(int),
     }
 
 def update(state, f):
@@ -98,14 +100,20 @@ def update(state, f):
     key = (f["src_ip"], f["dst_ip"])
     state["port_sets"][key].add(f["dst_port"])
     state["syn_counts"][key] += 1
+    state["evidence_count"][key] += 1
+    ev_item = {
+        "timestamp": f["timestamp"],
+        "src_ip": f["src_ip"],
+        "dst_ip": f["dst_ip"],
+        "dst_port": f["dst_port"],
+        "tcp_flags": f["tcp_flags"],
+    }
     if len(state["evidence"][key]) < _EVIDENCE_CAP:
-        state["evidence"][key].append({
-            "timestamp": f["timestamp"],
-            "src_ip": f["src_ip"],
-            "dst_ip": f["dst_ip"],
-            "dst_port": f["dst_port"],
-            "tcp_flags": f["tcp_flags"],
-        })
+        state["evidence"][key].append(ev_item)
+    else:
+        j = random.randint(0, state["evidence_count"][key] - 1)
+        if j < _EVIDENCE_CAP:
+            state["evidence"][key][j] = ev_item
 
 def finalize(state):
     alerts = []
