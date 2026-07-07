@@ -114,6 +114,7 @@ def _build_replay(evidence, total_queries, total_suspicious):
                 "total_queries": total_queries,
                 "suspicious_count": running_suspicious,
             },
+            "gate_now": gate_now,
             "gate_passed": gate_passed,
             "edges": edges,
         })

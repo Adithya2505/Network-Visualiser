@@ -59,6 +59,7 @@ def _build_replay(evidence, total_unique_ports, total_syn_count):
                 "unique_ports": cur_unique,
                 "syn_count": cur_syns,
             },
+            "gate_now": gate_now,
             "gate_passed": gate_passed,
             "edges": edges,
         })

@@ -54,6 +54,7 @@ def _build_replay(evidence, total_syn_count, total_synack_count):
                 "synack_count": total_synack_count,
                 "ratio": round(ratio, 2),
             },
+            "gate_now": gate_now,
             "gate_passed": gate_passed,
             "edges": edges,
         })
