@@ -52,7 +52,7 @@ def _build_replay(evidence, total_unique_ports, total_syn_count):
             for (src, dst), info in edge_map.items()
         ]
 
-        frames.append({
+        frame = {
             "time_bucket": time_bucket,
             "events": events,
             "running_state": {
@@ -62,7 +62,9 @@ def _build_replay(evidence, total_unique_ports, total_syn_count):
             "gate_now": gate_now,
             "gate_passed": gate_passed,
             "edges": edges,
-        })
+        }
+        if len(frames) < 2 or gate_now:
+            frames.append(frame)
 
     return {
         "detector_type": "port_scan",

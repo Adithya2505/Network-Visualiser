@@ -46,7 +46,7 @@ def _build_replay(evidence, total_syn_count, total_synack_count):
             for (src, dst), count in edge_map.items()
         ]
 
-        frames.append({
+        frame = {
             "time_bucket": time_bucket,
             "events": events,
             "running_state": {
@@ -57,7 +57,9 @@ def _build_replay(evidence, total_syn_count, total_synack_count):
             "gate_now": gate_now,
             "gate_passed": gate_passed,
             "edges": edges,
-        })
+        }
+        if len(frames) < 2 or gate_now:
+            frames.append(frame)
 
     final_ratio = total_syn_count / max(total_synack_count, 1)
 
